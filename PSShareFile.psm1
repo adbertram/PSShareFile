@@ -37,10 +37,10 @@ function Request-ShareFileAccessToken {
 
 		$payload = @{
 			'grant_type'    = 'password'
-			'client_id'     = [System.Uri]::EscapeUriString($authInfo.ClientId) ## 'QBvYyZmNgQWpndvk3AvzYw761XLq4TDc'
-			'client_secret' = [System.Uri]::EscapeUriString($authInfo.ClientSecret) ## '7yUepznC77LAfIZaTtQ88r0Qxcq0E4FHL6agoODfiOfyY3gM'
-			'username'      = $authInfo.Username ## 'adam@techsnips.io'
-			'password'      = [System.Uri]::EscapeUriString($authInfo.Password) ## '63F8YbTp&$ZsR3FUztzqw6H'
+			'client_id'     = [System.Uri]::EscapeUriString($authInfo.ClientId) 
+			'client_secret' = [System.Uri]::EscapeUriString($authInfo.ClientSecret) 
+			'username'      = $authInfo.Username
+			'password'      = [System.Uri]::EscapeUriString($authInfo.Password)
 		}
 
 		$endpointAuthUri = 'https://techsnips.sharefile.com/oauth/token'
