@@ -72,8 +72,20 @@ function Get-ShareFileFolder {
 		$uri = 'https://techsnips.sf-api.com/sf/v3/Items/ByPath'
 		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
 	} catch {
-		if (($_.ErrorDetails.Message | ConvertFrom-Json).code -ne 'NotFound') {
-			$PSCmdlet.ThrowTerminatingError($_)
+		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
+			'NotFound' {
+				Write-Verbose -Message "The folder [$($Path)] was not found."
+				break
+			}
+			'Unauthorized' {
+				## Get another token
+				Request-ShareFileAccessToken
+				Get-ShareFileFolder @PSBoundParameters
+				break
+			}
+			default {
+				$PSCmdlet.ThrowTerminatingError($_)
+			}
 		}
 	}
 }
@@ -99,11 +111,23 @@ function Get-ShareFileUser {
 		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
 
 	} catch {
-		if (($_.ErrorDetails.Message | ConvertFrom-Json).code -ne 'NotFound') {
-			$PSCmdlet.ThrowTerminatingError($_)
+		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
+			'NotFound' {
+				Write-Verbose -Message "The folder [$($Path)] was not found."
+				break
+			}
+			'Unauthorized' {
+				## Get another token
+				Request-ShareFileAccessToken
+				Get-ShareFileFolder @PSBoundParameters
+				break
+			}
+			default {
+				$PSCmdlet.ThrowTerminatingError($_)
+			}
 		}
 	}
-}	
+}
 
 function Get-ShareFileApiAuthInfo {
 	[CmdletBinding()]
