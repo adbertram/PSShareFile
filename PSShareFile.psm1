@@ -43,89 +43,13 @@ function Request-ShareFileAccessToken {
 			'password'      = [System.Uri]::EscapeUriString($authInfo.Password)
 		}
 
-		$endpointAuthUri = 'https://techsnips.sharefile.com/oauth/token'
+		$endpointAuthUri = "https://$$($authInfo.AccountName).sharefile.com/oauth/token"
 		$headers = @{ 'Content-Type' = 'application/x-www-form-urlencoded' }
 
 		$result = Invoke-RestMethod -Uri $endpointAuthUri -Headers $headers -Method GET -Body $payload
 		Save-ShareFileApiAuthInfo -Token $result.access_token
 	} catch {
 		Write-Error $_.Exception.Message
-	}
-}
-
-function Get-ShareFileFolder {
-	[CmdletBinding()]
-	param
-	(
-		[Parameter(Mandatory)]
-		[ValidateNotNullOrEmpty()]
-		[string]$Path
-	)
-
-	$ErrorActionPreference = 'Stop'
-
-	$token = (Get-ShareFileApiAuthInfo).Token
-
-	try {
-		$headers = @{ 'Authorization' = "Bearer $token" }
-		$payload = @{ 'path' = $Path }
-		$uri = 'https://techsnips.sf-api.com/sf/v3/Items/ByPath'
-		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
-	} catch {
-		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
-			'NotFound' {
-				Write-Verbose -Message "The folder [$($Path)] was not found."
-				break
-			}
-			'Unauthorized' {
-				## Get another token
-				Request-ShareFileAccessToken
-				Get-ShareFileFolder @PSBoundParameters
-				break
-			}
-			default {
-				$PSCmdlet.ThrowTerminatingError($_)
-			}
-		}
-	}
-}
-
-function Get-ShareFileUser {
-	[CmdletBinding()]
-	param
-	(
-		[Parameter(Mandatory)]
-		[ValidateNotNullOrEmpty()]
-		[string]$EmailAddress
-	)
-
-	$ErrorActionPreference = 'Stop'
-
-	$token = (Get-ShareFileApiAuthInfo).Token
-
-	try {
-		$headers = @{ 'Authorization' = "Bearer $token" }
-		$payload = @{ 'emailAddress' = $EmailAddress }
-	
-		$uri = 'https://techsnips.sf-api.com/sf/v3/Users'
-		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
-
-	} catch {
-		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
-			'NotFound' {
-				Write-Verbose -Message "The folder [$($Path)] was not found."
-				break
-			}
-			'Unauthorized' {
-				## Get another token
-				Request-ShareFileAccessToken
-				Get-ShareFileFolder @PSBoundParameters
-				break
-			}
-			default {
-				$PSCmdlet.ThrowTerminatingError($_)
-			}
-		}
 	}
 }
 
@@ -179,6 +103,9 @@ function Save-ShareFileApiAuthInfo {
 		[string]$Password,
 
 		[Parameter()]
+		[string]$AccountName,
+
+		[Parameter()]
 		[ValidateNotNullOrEmpty()]
 		[string]$Token,
 	
@@ -205,5 +132,110 @@ function Save-ShareFileApiAuthInfo {
 			Write-Verbose "Creating $RegistryKeyPath\$val"
 			New-ItemProperty $RegistryKeyPath -Name $val -Value $(encrypt $((Get-Variable $val).Value)) -Force | Out-Null
 		}
+	}
+}
+
+function Get-ShareFileFolder {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$Path
+	)
+
+	$ErrorActionPreference = 'Stop'
+
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$payload = @{ 'path' = $Path }
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items/ByPath"
+		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
+	} catch {
+		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
+			'NotFound' {
+				Write-Verbose -Message "The folder [$($Path)] was not found."
+				break
+			}
+			'Unauthorized' {
+				## Get another token
+				Request-ShareFileAccessToken
+				Get-ShareFileFolder @PSBoundParameters
+				break
+			}
+			default {
+				$PSCmdlet.ThrowTerminatingError($_)
+			}
+		}
+	}
+}
+
+function Get-ShareFileUser {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$EmailAddress
+	)
+
+	$ErrorActionPreference = 'Stop'
+
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$payload = @{ 'emailAddress' = $EmailAddress }
+	
+		$uri = "https://$$($authInfo.AccountName).sf-api.com/sf/v3/Users"
+		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
+
+	} catch {
+		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
+			'NotFound' {
+				Write-Verbose -Message "The folder [$($Path)] was not found."
+				break
+			}
+			'Unauthorized' {
+				## Get another token
+				Request-ShareFileAccessToken
+				Get-ShareFileFolder @PSBoundParameters
+				break
+			}
+			default {
+				$PSCmdlet.ThrowTerminatingError($_)
+			}
+		}
+	}
+}
+
+function New-ShareFileFolder {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ParentFolderId,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$Name
+	)
+
+	$ErrorActionPreference = 'Stop'
+	
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$payload = @{ 'Name' = $Name }
+		
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($ParentFolderId)/Folder"
+		Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body $payload
+
+	} catch {
+		$PSCmdlet.ThrowTerminatingError($_)
 	}
 }
