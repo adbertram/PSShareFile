@@ -135,7 +135,7 @@ function Save-ShareFileApiAuthInfo {
 	}
 }
 
-function Get-ShareFileFolder {
+function Get-ShareFileItem {
 	[CmdletBinding()]
 	param
 	(
@@ -162,7 +162,7 @@ function Get-ShareFileFolder {
 			'Unauthorized' {
 				## Get another token
 				Request-ShareFileAccessToken
-				Get-ShareFileFolder @PSBoundParameters
+				Get-ShareFileItem @PSBoundParameters
 				break
 			}
 			default {
@@ -201,7 +201,7 @@ function Get-ShareFileUser {
 			'Unauthorized' {
 				## Get another token
 				Request-ShareFileAccessToken
-				Get-ShareFileFolder @PSBoundParameters
+				Get-ShareFileItem @PSBoundParameters
 				break
 			}
 			default {
@@ -234,6 +234,30 @@ function New-ShareFileFolder {
 		
 		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($ParentFolderId)/Folder"
 		Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body $payload
+
+	} catch {
+		$PSCmdlet.ThrowTerminatingError($_)
+	}
+}
+
+function Remove-ShareFileItem {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$Id
+	)
+
+	$ErrorActionPreference = 'Stop'
+	
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($Id)"
+		Invoke-RestMethod -Uri $uri -Headers $headers -Method DELETE -Body $payload
 
 	} catch {
 		$PSCmdlet.ThrowTerminatingError($_)
