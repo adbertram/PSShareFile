@@ -141,7 +141,11 @@ function Get-ShareFileItem {
 	(
 		[Parameter(Mandatory)]
 		[ValidateNotNullOrEmpty()]
-		[string]$Path
+		[string]$Path,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$IncludeChildren
 	)
 
 	$ErrorActionPreference = 'Stop'
@@ -151,7 +155,11 @@ function Get-ShareFileItem {
 	try {
 		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
 		$payload = @{ 'path' = $Path }
+
 		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items/ByPath"
+		if ($IncludeChildren.IsPresent) {
+			$uri += '?$expand=Children'
+		}
 		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
 	} catch {
 		switch (($_.ErrorDetails.Message | ConvertFrom-Json).code) {
