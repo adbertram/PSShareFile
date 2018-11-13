@@ -43,7 +43,7 @@ function Request-ShareFileAccessToken {
 			'password'      = [System.Uri]::EscapeUriString($authInfo.Password)
 		}
 
-		$endpointAuthUri = "https://$$($authInfo.AccountName).sharefile.com/oauth/token"
+		$endpointAuthUri = "https://$($authInfo.AccountName).sharefile.com/oauth/token"
 		$headers = @{ 'Content-Type' = 'application/x-www-form-urlencoded' }
 
 		$result = Invoke-RestMethod -Uri $endpointAuthUri -Headers $headers -Method GET -Body $payload
@@ -197,7 +197,7 @@ function Get-ShareFileUser {
 		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
 		$payload = @{ 'emailAddress' = $EmailAddress }
 	
-		$uri = "https://$$($authInfo.AccountName).sf-api.com/sf/v3/Users"
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Users"
 		Invoke-RestMethod -Uri $uri -Headers $headers -Method GET -Body $payload
 
 	} catch {
@@ -209,7 +209,7 @@ function Get-ShareFileUser {
 			'Unauthorized' {
 				## Get another token
 				Request-ShareFileAccessToken
-				Get-ShareFileItem @PSBoundParameters
+				Get-ShareFileUser @PSBoundParameters
 				break
 			}
 			default {
