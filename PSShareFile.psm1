@@ -219,6 +219,65 @@ function Get-ShareFileUser {
 	}
 }
 
+function New-ShareFileUser {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$EmailAddress,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$FirstName,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$LastName,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$Company,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[securestring]$Password,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$Notify,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$PassThru
+	)
+
+	$ErrorActionPreference = 'Stop'
+	
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$plainTextPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
+		$payload = @{ 
+			Email     = $EmailAddress
+			FirstName = $FirstName
+			LastName  = $LastName
+			Company   = $Company
+			Password  = $plainTextPassword
+		}
+		
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Users"
+		$output = Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body $payload
+		if ($PassThru.IsPresent) {
+			$output
+		}
+
+	} catch {
+		$PSCmdlet.ThrowTerminatingError($_)
+	}
+}
+
 function New-ShareFileFolder {
 	[CmdletBinding()]
 	param
