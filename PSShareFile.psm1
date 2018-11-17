@@ -219,6 +219,98 @@ function Get-ShareFileUser {
 	}
 }
 
+function Set-ShareFileAccessControl {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[ValidateNotNullOrEmpty()]
+		[pscustomobject]$Item,
+
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$PrincipalId,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$Recursive,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[bool]$CanDownload = $true,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[bool]$CanUpload = $false,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[bool]$CanView = $true,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[bool]$CanDelete = $false,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[bool]$CanManagePermissions = $false,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$PassThru
+	)
+
+	$ErrorActionPreference = 'Stop'
+	
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$payload = @{ 
+			Principal            = @{ 'id' = $PrincipalId }
+			CanUpload            = $CanUpload
+			CanDownload          = $CanDownload
+			CanView              = $CanView
+			CanDelete            = $CanDelete
+			CanManagePermissions = $CanManagePermissions
+		}
+		if ($PSBoundParameters.ContainsKey('Recursive')) {
+			$payload.recursive = $true
+		}
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($($Item.id))/AccessControls"
+		$output = Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body ($payload | ConvertTo-Json) -ContentType 'application/json'
+		if ($PassThru.IsPresent) {
+			$output
+		}
+
+	} catch {
+		$PSCmdlet.ThrowTerminatingError($_)
+	}
+}
+
+function Get-ShareFileAccessControl {
+	[CmdletBinding()]
+	param
+	(
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[ValidateNotNullOrEmpty()]
+		[pscustomobject]$Item
+	)
+
+	$ErrorActionPreference = 'Stop'
+	
+	$authInfo = Get-ShareFileApiAuthInfo
+
+	try {
+		$headers = @{ 'Authorization' = "Bearer $($authInfo.Token)" }
+		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($($Item.id))/AccessControls"
+		(Invoke-RestMethod -Uri $uri -Headers $headers -Method GET).value
+
+	} catch {
+		$PSCmdlet.ThrowTerminatingError($_)
+	}
+}
+
 function New-ShareFileUser {
 	[CmdletBinding()]
 	param
