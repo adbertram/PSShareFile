@@ -380,7 +380,11 @@ function New-ShareFileFolder {
 
 		[Parameter(Mandatory)]
 		[ValidateNotNullOrEmpty()]
-		[string]$Name
+		[string]$Name,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[switch]$PassThru
 	)
 
 	$ErrorActionPreference = 'Stop'
@@ -392,7 +396,10 @@ function New-ShareFileFolder {
 		$payload = @{ 'Name' = $Name }
 		
 		$uri = "https://$($authInfo.AccountName).sf-api.com/sf/v3/Items($ParentFolderId)/Folder"
-		Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body $payload
+		$output = Invoke-RestMethod -Uri $uri -Headers $headers -Method POST -Body $payload
+		if ($PassThru.IsPresent) {
+			$output
+		}
 
 	} catch {
 		$PSCmdlet.ThrowTerminatingError($_)
