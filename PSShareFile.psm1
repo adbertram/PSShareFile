@@ -253,6 +253,10 @@ function Set-ShareFileAccessControl {
 
 		[Parameter()]
 		[ValidateNotNullOrEmpty()]
+		[bool]$NotifyOnUpload = $true,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
 		[bool]$CanManagePermissions = $false,
 
 		[Parameter()]
@@ -273,6 +277,7 @@ function Set-ShareFileAccessControl {
 			CanView              = $CanView
 			CanDelete            = $CanDelete
 			CanManagePermissions = $CanManagePermissions
+			NotifyOnUpload       = $NotifyOnUpload
 		}
 		if ($PSBoundParameters.ContainsKey('Recursive')) {
 			$payload.recursive = $true
